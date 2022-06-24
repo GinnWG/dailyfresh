@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
 import re
 from django.contrib.auth.models import User
-import apps.goods.views as goods_view
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 # Create your views here.
 
@@ -43,12 +44,14 @@ def register_handle(request):
         user = None
     # user exist
     if user:
+        print('===user exist===')
         return render(request, 'register.html', {'errmsg': 'user exist'})
 
+    print('------------')
     user = User.objects.create_user(username, email, password)
     user.is_active = 0
     user.save()
-    return redirect(reverse('goods'))
+    return redirect(reverse('index'))
 
 
 def login(request):

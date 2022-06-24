@@ -30,6 +30,6 @@ urlpatterns = [
 
 
 
-    path('', goods_view.index, name='goods'),
+    path('', goods_view.index, name='index'),
 
 ]
