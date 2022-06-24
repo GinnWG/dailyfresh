@@ -20,12 +20,11 @@ urlpatterns = [
 
     # url(r'^user/$', views.register, name='register'),  # 注册页面
 
-    path('user/', user_view.register, name='user'),
+    path('user/', user_view.RegisterView.as_view(), name='user'),
     path('goods/', goods_view.index, name='goods'),
 
 
-    path('user/register/', user_view.register, name='register'),
-    path('user/register_handle/', user_view.register_handle, name='register_handle'),
+    path('user/register/', user_view.RegisterView.as_view(), name='register'),
     path('user/login/', user_view.login, name='login'),
 
 
