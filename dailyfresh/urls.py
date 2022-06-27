@@ -25,7 +25,8 @@ urlpatterns = [
 
 
     path('user/register/', user_view.RegisterView.as_view(), name='register'),
-    path('user/login/', user_view.login, name='login'),
+    path('user/login/', user_view.LoginView.as_view(), name='login'),
+    path('user/active/(?P<token>.*)$', user_view.ActiveView.as_view(), name='active'),
 
 
 

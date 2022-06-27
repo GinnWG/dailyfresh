@@ -4,6 +4,10 @@ from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from django.views import View
 from django.urls import reverse
+from django.http import HttpResponse
+from django.conf import settings
+from itsdangerous import TimedSerializer
+from itsdangerous import SignatureExpired
 
 User = get_user_model()
 
@@ -51,8 +55,8 @@ User = get_user_model()
 #         user.save()
 #         return redirect(reverse('index'))
 
-def login(request):
-    return render(request, 'login.html')
+# def login(request):
+#     return render(request, 'login.html')
 
 
 class RegisterView(View):
@@ -95,5 +99,35 @@ class RegisterView(View):
         user = User.objects.create_user(username, email, password)
         user.is_active = 0
         user.save()
+
+        # activity login
+        # mask user ID by itsdangerous
+        # Time out 3600s = 1 hour
+        serializer = TimedSerializer(settings.SECRET_KEY, 3600)
+        info = {'confirm': user.id}
+        token = serializer.dump(info)
+
         return redirect(reverse('index'))
 
+class ActiveView(View):
+    def get(self, request, token):
+        serializer = TimedSerializer(settings.SECRET_KEY, 3600)
+        try:
+            info = serializer.load(token)
+            # get user id
+            user_id = info['confirm']
+            # get user
+            user = User.objects.get(id=user_id)
+            user.is_active = 1
+            user.save()
+
+            # redirect to login
+            return redirect(reverse('login'))
+        except SignatureExpired as err:
+            # Secret key is time out
+            return HttpResponse('Secret key is time out')
+
+
+class LoginView(View):
+    def get(self, request):
+        return render(request, 'login.html')
