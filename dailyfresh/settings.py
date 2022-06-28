@@ -123,3 +123,5 @@ TINYMCE_DEFAULT_CONFIG = {
     'width': 600,
     'height':  400,
 }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
