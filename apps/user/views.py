@@ -1,3 +1,5 @@
+import smtplib
+
 from django.shortcuts import render, redirect
 import re
 from django.contrib.auth.models import User
@@ -49,7 +51,6 @@ class RegisterView(View):
             print('===user exist===')
             return render(request, 'register.html', {'errmsg': 'user exist'})
 
-        print('------------')
         user = User.objects.create_user(username, email, password)
         user.is_active = 0
         user.save()
@@ -59,8 +60,30 @@ class RegisterView(View):
         # Time out 3600s = 1 hour
         serializer = TimedSerializer(settings.SECRET_KEY, 3600)
         info = {'confirm': user.id}
-        token = serializer.dump(info)
+        token = str(b'serializer.dumps(info)', "utf-8")
+        # token = token.decode("utf-8")
 
+        # send pre user email
+        subject = 'Dailyfresh welcome new client'
+        message = ''
+        sender = settings.EMAIL_FROM
+        receiver = [User.email]
+
+        html_message = '<h1>%s, Dailyfresh' \
+                       '</h1>Please click the link below to active your count<br/>' \
+                       '<a href="http://127.0.0.1:8000/user/active/%s">' \
+                       'http://127.0.0.1:8000/user/active/%s' \
+                       '</a>' % (username, token, token)
+
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login("Wj19930703@gmail.com", "Average101")
+
+        # send_mail(subject, message, sender, receiver, html_message=html_message)
+        server.sendmail(sender, receiver, html_message)
+        server.quit()
         return redirect(reverse('index'))
 
 class ActiveView(View):
@@ -75,12 +98,6 @@ class ActiveView(View):
             user.is_active = 1
             user.save()
 
-            # send pre user email
-            subject = 'Dailyfresh welcome new client'
-            message = 'Dailyfresh fresh everyday, please active your count'
-            sender = settings.EMAIL_FROM
-            receiver = [User.email]
-            send_mail(subject,message,sender,receiver)
             # redirect to login
             return redirect(reverse('login'))
         except SignatureExpired as err:
