@@ -1,6 +1,32 @@
 # -*-coding:utf-8-*-
 static目录下的均为静态页面
 
+
+Page description:
+
+1、index.html website home page, the top "Register|Login" and user information is switched to display, product category menu click on the direct link to scroll to this page product module. Home page has been added to the slideshow effect. This effect has been described in the course on how to create.
+
+2、list.html product list page, product category menu switch to show and hide when the mouse hovered, click the menu to link to the corresponding product list page.
+
+3、detail.html product details page, the details of a product.
+
+4、cart.html My Cart page, list the products that have been put into the shopping cart.
+
+5、place_order.html Submit order page
+
+6、login.html login page
+
+7、register.html registration page, has added the initial form validation effect, this effect in the course has told how to create.
+
+8、user_center_info.html User center - user information page User center function one, view the basic information of the user
+
+9、user_center_order.html user_center_order.html user_center_order.html user_center_order.html user_center_order.html
+
+10、user_center_site.html User center-user shipping address page User center function three, view and set the user's shipping address
+
+Translated with www.DeepL.com/Translator (free version)
+
+
 页面说明：
 
 1、index.html   网站首页，顶部“注册|登录”和用户信息是切换显示的，商品分类菜单点击直接链接滚动到本页面商品模块。首页已加入幻灯片效果。此效果在课程中已讲述如何制作。

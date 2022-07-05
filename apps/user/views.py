@@ -112,7 +112,13 @@ class ActiveView(View):
 
 class LoginView(View):
     def get(self, request):
-        return render(request, 'login.html')
+        if 'username' in request.COOKIES:
+            username = request.COOKIES.get('username')
+            checked = 'checked'
+        else:
+            username = ''
+            checked = ''
+        return render(request, 'login.html', {'username': username, 'checked': checked})
 
     def post(self, request):
         username = request.POST.get('username')
@@ -125,12 +131,37 @@ class LoginView(View):
         if user is not None:
             if user.is_active:
                 login(request, user)
-                print("User is valid, active and authenticated.")
-                return render(request, 'index.html')
+                response = redirect(reverse('index'))
+                remember = request.POST.get('remember')
+
+                if remember == 'on':
+                    response.set_cookie('username', username, max_age=7*24*3600) # one week
+                else:
+                    response.delete_cookie('username')
+                # print("User is valid, active and authenticated.")
+                return response
             else:
-                print("The password is valid, but the account has been disabled.")
+                # print("The password is valid, but the account has been disabled.")
                 return render(request, 'login.html', {'errmsg': 'account has been disabled.'})
         else:
-            print("The username or password were incorrect.")
+            # print("The username or password were incorrect.")
             return render(request, 'login.html', {'errmsg': 'username or password were incorrect.'})
 
+class UserInfoView(View):
+    def get(self, request):
+        return render(request, 'user_center_info.html')
+
+class UserOrderView(View):
+    def get(self, request):
+        return render(request, 'user_center_order.html')
+
+class AddressView(View):
+    def get(self, request):
+        return render(request, 'user_center_site.html')
+
+class LogoutView(View):
+    """退出登录"""
+    def get(self, request):
+        # logout(request)
+
+        return redirect(reverse('goods:index'))
