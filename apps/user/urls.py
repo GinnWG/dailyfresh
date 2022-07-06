@@ -1,5 +1,6 @@
 from apps.user import views
 from django.urls import path, include
+from django.contrib.auth.decorators import login_required
 
 from . import views
 app_name = "user"

@@ -6,7 +6,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from django.views import View
 from django.urls import reverse
-from django.contrib.auth import authenticate, login
+from utils.mixin import LoginRequiredMixin
+from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.conf import settings
@@ -36,7 +37,7 @@ class RegisterView(View):
         if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
             return render(request, 'register.html', {'errmsg': 'email form illegal'})
 
-        # psw
+        # pwd
         if not password == password2:
             return render(request, 'register.html', {'errmsg': 'password non correspondent'})
 
@@ -67,27 +68,6 @@ class RegisterView(View):
         token = token.decode("utf-8")
 
         # send pre user email
-
-        # subject = 'Dailyfresh welcome new client'
-        # message = ''
-        # sender = settings.EMAIL_FROM
-        # receiver = [User.email]
-        #
-        # html_message = '<h1>%s, Dailyfresh' \
-        #                '</h1>Please click the link below to active your count<br/>' \
-        #                '<a href="http://127.0.0.1:8000/user/active/%s">' \
-        #                'http://127.0.0.1:8000/user/active/%s' \
-        #                '</a>' % (username, token, token)
-        #
-        # server = smtplib.SMTP('smtp.gmail.com', 587)
-        # server.ehlo()
-        # server.starttls()
-        # server.ehlo()
-        # server.login("Wj19930703@gmail.com", "Average101")
-        #
-        # # send_mail(subject, message, sender, receiver, html_message=html_message)
-        # server.sendmail(sender, receiver, html_message)
-        # server.quit()
         send_register_active_email.delay(email, username, token)
         return redirect(reverse('index'))
 
@@ -114,11 +94,15 @@ class LoginView(View):
     def get(self, request):
         if 'username' in request.COOKIES:
             username = request.COOKIES.get('username')
+            password = request.COOKIES.get('pwd')
+
+            print(username + ": " + password)
             checked = 'checked'
         else:
             username = ''
+            password = ''
             checked = ''
-        return render(request, 'login.html', {'username': username, 'checked': checked})
+        return render(request, 'login.html', {'username': username, 'pwd': password, 'checked': checked})
 
     def post(self, request):
         username = request.POST.get('username')
@@ -131,13 +115,18 @@ class LoginView(View):
         if user is not None:
             if user.is_active:
                 login(request, user)
-                response = redirect(reverse('index'))
+
+                # get url after login, index by default
+                next_url = request.GET.get('next', reverse('index'))
+
+                response = redirect(next_url)
                 remember = request.POST.get('remember')
 
                 if remember == 'on':
                     response.set_cookie('username', username, max_age=7*24*3600) # one week
+                    response.set_cookie('pwd', password, max_age=7*24*3600)
                 else:
-                    response.delete_cookie('username')
+                    response.delete_cookie('username', 'pwd')
                 # print("User is valid, active and authenticated.")
                 return response
             else:
@@ -147,21 +136,30 @@ class LoginView(View):
             # print("The username or password were incorrect.")
             return render(request, 'login.html', {'errmsg': 'username or password were incorrect.'})
 
-class UserInfoView(View):
+class UserInfoView(LoginRequiredMixin, View):
     def get(self, request):
-        return render(request, 'user_center_info.html')
+        # get user info
+        return render(request, 'user_center_info.html', {'page': 'user'})
 
-class UserOrderView(View):
+class UserOrderView(LoginRequiredMixin, View):
     def get(self, request):
-        return render(request, 'user_center_order.html')
+        # get order
+        return render(request, 'user_center_order.html', {'page': 'order'})
 
-class AddressView(View):
+class AddressView(LoginRequiredMixin, View):
     def get(self, request):
-        return render(request, 'user_center_site.html')
+        return render(request, 'user_center_site.html', {'page': 'address'})
+
+    def post(self, request):
+        receiver = request.POST.get('receiver')
+
+        return render(request, 'user_center_site.html', {'page': 'address'})
+
 
 class LogoutView(View):
     """退出登录"""
     def get(self, request):
-        # logout(request)
+        logout(request)
 
         return redirect(reverse('goods:index'))
+
