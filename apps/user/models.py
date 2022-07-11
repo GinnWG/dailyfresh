@@ -1,14 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from db.base_model import BaseModel
-from .apps import UserConfig
 from dailyfresh import settings
 
 class User(AbstractUser, BaseModel):
     """用户模型类"""
 
     class Meta:
-        app_label = 'User'
         db_table = 'df_user'
         verbose_name = '用户'
         verbose_name_plural = verbose_name
