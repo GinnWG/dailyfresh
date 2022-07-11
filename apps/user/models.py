@@ -1,12 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from db.base_model import BaseModel
-
+from .apps import UserConfig
+from dailyfresh import settings
 
 class User(AbstractUser, BaseModel):
     """用户模型类"""
 
     class Meta:
+        app_label = 'User'
         db_table = 'df_user'
         verbose_name = '用户'
         verbose_name_plural = verbose_name
@@ -14,6 +16,7 @@ class User(AbstractUser, BaseModel):
 
 class AddressManager(models.Manager):
     """地址模型管理器类"""
+
     # 1. 改变原有查询的结果集:all()
     # 2. 封装方法:用户操作模型类对应的数据表(增删查改)
 
@@ -29,7 +32,7 @@ class AddressManager(models.Manager):
 
 class Address(BaseModel):
     """地址模型类"""
-    user = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name='所属用户')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='所属用户')
     receiver = models.CharField(max_length=20, verbose_name='收件人')
     addr = models.CharField(max_length=256, verbose_name='收件地址')
     zip_code = models.CharField(max_length=6, null=True, verbose_name='邮政编码')

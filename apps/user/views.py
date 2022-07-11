@@ -2,12 +2,12 @@ import smtplib
 
 from django.shortcuts import render, redirect
 import re
-from django.contrib.auth.models import User
-from django.contrib.auth import get_user_model
+# from django.contrib.auth.models import User
+from .models import Address, User
 from django.views import View
 from django.urls import reverse
 from utils.mixin import LoginRequiredMixin
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.conf import settings
@@ -51,7 +51,7 @@ class RegisterView(View):
             user = None
         # user exist
         if user:
-            print('===user exist===')
+            # print('===user exist===')
             return render(request, 'register.html', {'errmsg': 'user exist'})
 
         user = User.objects.create_user(username, email, password)
@@ -148,10 +148,46 @@ class UserOrderView(LoginRequiredMixin, View):
 
 class AddressView(LoginRequiredMixin, View):
     def get(self, request):
-        return render(request, 'user_center_site.html', {'page': 'address'})
+        user = request.user
+        try:
+            address = Address.objects.get(user=user, is_delete=True)
+        except Address.DoesNotExist:
+            address = None
+
+        return render(request, 'user_center_site.html', {'page': 'address', 'address':address})
 
     def post(self, request):
+        # Post
         receiver = request.POST.get('receiver')
+        zip_code = request.POST.get('zip_code')
+        addr = request.POST.get('addr')
+        phone = request.POST.get('phone')
+
+        # verify
+        if not all([receiver, phone, addr]):
+            return render(request, 'user_center_site', {'errmsg': 'info not complete'})
+
+        # phone
+        if not re.match(r'^1([3-8][0-9]|5[189]|8[6789])[0-9]{8}$', phone):
+            return render(request, 'user_center_site', {'errmsg': 'info not complete'})
+
+        user = request.user
+        try:
+            address = Address.objects.get(user=user, is_delete=True)
+        except Address.DoesNotExist:
+            address = None
+
+        if Address:
+            is_default = False
+        else:
+            is_default = True
+
+        # add
+        Address.objects.create(user=user, receiver=receiver, phone=phone, address=addr, zip_code=zip_code, is_delete=is_default)
+
+
+
+
 
         return render(request, 'user_center_site.html', {'page': 'address'})
 
