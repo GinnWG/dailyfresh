@@ -18,9 +18,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-# django认证系统使用的模型类
-AUTH_USER_MODEL = 'user.User'
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -37,6 +34,9 @@ INSTALLED_APPS = [
     'apps.order',
     'apps.goods',
 ]
+
+# django认证系统使用的模型类
+AUTH_USER_MODEL = 'user.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
