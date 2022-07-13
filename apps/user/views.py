@@ -14,6 +14,9 @@ from django.conf import settings
 from itsdangerous import TimedSerializer
 from itsdangerous import SignatureExpired
 from celery_tasks.tasks import send_register_active_email
+from django_redis import get_redis_connection
+
+from apps.goods.models import GoodsSKU
 
 User = get_user_model()
 
@@ -55,7 +58,7 @@ class RegisterView(View):
             return render(request, 'register.html', {'errmsg': 'user exist'})
 
         user = User.objects.create_user(username, email, password)
-        user.is_active = 1 # During the send email no work user.is_active = 0
+        user.is_active = 1  # During the send email no work user.is_active = 0
         user.save()
 
         # activity login
@@ -70,6 +73,7 @@ class RegisterView(View):
         # send pre user email
         send_register_active_email.delay(email, username, token)
         return redirect(reverse('index'))
+
 
 class ActiveView(View):
     def get(self, request, token):
@@ -123,8 +127,8 @@ class LoginView(View):
                 remember = request.POST.get('remember')
 
                 if remember == 'on':
-                    response.set_cookie('username', username, max_age=7*24*3600) # one week
-                    response.set_cookie('pwd', password, max_age=7*24*3600)
+                    response.set_cookie('username', username, max_age=7 * 24 * 3600)  # one week
+                    response.set_cookie('pwd', password, max_age=7 * 24 * 3600)
                 else:
                     response.delete_cookie('username', 'pwd')
                 # print("User is valid, active and authenticated.")
@@ -136,25 +140,48 @@ class LoginView(View):
             # print("The username or password were incorrect.")
             return render(request, 'login.html', {'errmsg': 'username or password were incorrect.'})
 
+
 class UserInfoView(LoginRequiredMixin, View):
     def get(self, request):
         # get user info
-        return render(request, 'user_center_info.html', {'page': 'user'})
+        user = request.user
+        address = Address.objects.get_default_address(user)
+
+        # get user view history (saved in Redis)
+        # from redis import StrictRedis
+        # sr = StrictRedis(host='127.0.0.1', port='6379', db=3)
+        connection = get_redis_connection("default")
+        history_key = 'history_%id' % user.id
+
+        # get the first 5 goods id
+        sku_id = connection.lrange(history_key, 0, 4)
+
+        good_list = []
+        for id in sku_id:
+            goods = GoodsSKU.objects.get(id=id)
+            good_list.append(goods)
+
+        return render(request, 'user_center_info.html', {'page': 'user', 'address': address, 'good_list': good_list})
+
 
 class UserOrderView(LoginRequiredMixin, View):
     def get(self, request):
         # get order
         return render(request, 'user_center_order.html', {'page': 'order'})
 
+
 class AddressView(LoginRequiredMixin, View):
     def get(self, request):
         user = request.user
-        try:
-            address = Address.objects.get(user=user, is_delete=True)
-        except Address.DoesNotExist:
-            address = None
+        # try:
+        #     address = Address.objects.get(user=user, is_delete=True)
+        #     print(address)
+        # except Address.DoesNotExist:
+        #     address = None
+        #     print(address)
+        address = Address.objects.get_default_address(user)
 
-        return render(request, 'user_center_site.html', {'page': 'address', 'address':address})
+        return render(request, 'user_center_site.html', {'page': 'address', 'address': address})
 
     def post(self, request):
         # Post
@@ -165,37 +192,35 @@ class AddressView(LoginRequiredMixin, View):
 
         # verify
         if not all([receiver, phone, addr]):
-            return render(request, 'user_center_site', {'errmsg': 'info not complete'})
+            return render(request, 'user_center_site.html', {'errmsg': 'info not complete'})
 
         # phone
         if not re.match(r'^1([3-8][0-9]|5[189]|8[6789])[0-9]{8}$', phone):
-            return render(request, 'user_center_site', {'errmsg': 'info not complete'})
+            return render(request, 'user_center_site.html', {'errmsg': 'info not complete'})
 
         user = request.user
-        try:
-            address = Address.objects.get(user=user, is_delete=True)
-        except Address.DoesNotExist:
-            address = None
+        # try:
+        #     address = Address.objects.get(user=user, is_delete=True)
+        # except Address.DoesNotExist:
+        #     address = None
+        address = Address.objects.get_default_address(user)
 
-        if Address:
+        if address:
             is_default = False
         else:
             is_default = True
 
         # add
-        Address.objects.create(user=user, receiver=receiver, phone=phone, address=addr, zip_code=zip_code, is_delete=is_default)
+        Address.objects.create(user=user, receiver=receiver, phone=phone, addr=addr, zip_code=zip_code,
+                               is_delete=is_default)
 
-
-
-
-
-        return render(request, 'user_center_site.html', {'page': 'address'})
+        return redirect(reverse('user:address'))
 
 
 class LogoutView(View):
     """退出登录"""
+
     def get(self, request):
         logout(request)
 
         return redirect(reverse('goods:index'))
-
